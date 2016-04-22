@@ -1,0 +1,116 @@
+<!-- Creamos la estructura HTML estandar -->
+<!doctype html>
+<html xmlns="http://www.w3.org/1999/xhtml" xmlns:v="urn:schemas-microsoft-com:vml" xmlns:o="urn:schemas-microsoft-com:office:office">
+
+<head>
+	<title>Tutorial Firebase para IoT</title>
+	<!-- Agregamos la libreria Chart.js desde su repositorio -->
+	<script src="js/Chart.min.js"></script>
+	<!-- Agregamos la libreria firebase.js desde su repositorio -->
+	<script src="https://cdn.firebase.com/js/client/2.4.2/firebase.js"></script>
+	<!-- Agregamos la libreria jquery.js desde su repositorio -->
+	<script src="https://ajax.googleapis.com/ajax/libs/jquery/2.2.0/jquery.min.js"></script>
+	<!-- Agregamos nuestra libreria JS personalizada -->
+	<script src="js/functions.js"></script>
+	<!-- Agregamos nuestra hoja de estilos -->
+	<link rel="stylesheet" type="text/css" href="css/style.css">
+
+</head>
+
+<body>
+	<div class="container">
+		<!-- Contenendor para mostrar los datos leidos -->
+		<div style="float: left">
+			<canvas id="grafica" width="600" height="400"></canvas>
+			<div>
+				<!-- Boton para agregar datos simulados -->
+				<input type="button" id="btn" value="Agregar">
+			</div>
+		</div>
+		<div id="result" >
+			<!-- Creamos una tabla para visualizar los datos nuevos -->
+			<table>
+				<thead>
+					<tr>
+						<th>Fecha</th>
+						<th>Valor</th>
+					</tr>
+				</thead>
+				<tbody id="tabla">
+				</tbody>
+			</table>
+		</div>
+	</div>
+	
+</body>
+
+<script>
+	//variable para limitar los valores a mostrar en la grafica
+	puntos=0;
+	maxPuntos=20;
+	
+	//Script de la grafica
+	var canvas = document.getElementById('grafica'),
+		ctx = canvas.getContext('2d'),
+		
+		//Datos iniciales vacios
+		startingData = {
+		labels: [0],
+		datasets: [
+			{
+				//Colores de la grafica
+				fillColor: "rgba(220,220,220,0.2)",
+				strokeColor: "rgba(220,220,220,1)",
+				pointColor: "rgba(220,220,220,1)",
+				pointStrokeColor: "#fff",
+				data: [0]
+			}
+		]
+		}
+		
+	// Creamos una nueva grafica y reducimos los pasos de animacion para optimizar la velocidad de renderizado
+	grafica= new Chart(ctx).Line(startingData,{animationSteps: 10});
+
+	//Accedemos a nuestra base de datos
+	var ref = new Firebase("https://iot-test.firebaseio.com/");
+	//Hacemos referencia a nuestro nodo del sensor Temp
+	var tempRef = ref.child("Temp");
+	
+	//Se ejecuta por cada valor existente en la BD
+	//y cada que se agrega un valor nuevo a la base de datos
+	tempRef.on("child_added", function(snapshot, prevChildKey) {
+	//recuperamos una captura del objeto leido
+	var t = snapshot.val();//t correspondera a cada elemento dentro del nodo Temp
+		//Mostramos los datos en la consola de javascript
+		//console.log("Value: " + t.value);
+		//console.log("Timestamp: " + t.timestamp);
+		//Agregamos los datos a la tabla
+		$('#tabla').append('<tr><td>'+t.timestamp+'</td><td>'+t.value+'</td></tr>');
+		
+		//Agregamos valores a la grafica
+		grafica.addData([t.value], t.timestamp);
+		
+		puntos++;
+		console.log(puntos);
+		if(puntos>maxPuntos){
+			grafica.removeData();
+			puntos--;
+
+		}
+
+	});
+	
+	//Usamos JQuery para detectar clic en el botón
+	$('#btn').click(function(){
+		//Agregamos un dato nuevo en la base de datos
+		tempRef.push().set({
+			//generamos un valor aleatorio
+			value: Math.floor((Math.random() * 5) + 20),
+			//generamos un timestamp
+			timestamp: timeStamp()
+		});
+	});
+
+</script>
+
+</html>

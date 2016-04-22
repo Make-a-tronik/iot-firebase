@@ -1,0 +1,9 @@
+table, th, td{
+    border: 1px solid darkgrey;
+    text-align: center;
+    }
+    
+thead{
+    background-color: grey;
+    color: white;
+}
